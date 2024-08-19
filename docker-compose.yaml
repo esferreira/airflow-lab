@@ -1,0 +1,66 @@
+version: '3.9'  # Versão do Docker Compose
+services:
+  webserver:
+    image: apache/airflow:2.5.3  # Imagem do Airflow
+    container_name: airflow-webserver
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /opt/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+  scheduler:
+    image: apache/airflow:2.5.3
+    container_name: airflow-scheduler
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+    command: scheduler
+  worker:
+    image: apache/airflow:2.5.3
+    container_name: airflow-worker
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=Local
+    command: worker
+  postgres:
+    image: postgres:13
+    container_name: airflow-postgres
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+  redis:
+    image: redis:6
+    container_name: airflow-redis
